@@ -20,6 +20,7 @@ This setup provides a complete AI development environment with:
 | **Gradio Chat** | 7860 | Interactive LLM chat interface | http://10.11.1.105:7860 | ✅ |
 | **Streamlit** | 8501 | GPU monitoring & model management | http://10.11.1.105:8501 | ✅ |
 | **Open WebUI** | 3000 | ChatGPT-like web interface | http://10.11.1.105:3000 | ✅ |
+| **Wan2.2 Video Gen** | 7870 | AI video generation (T2V & I2V) | http://10.11.1.105:7870 | ✅ |
 | **Ollama API** | 11434 | Local LLM inference service | http://10.11.1.105:11434 | ✅ |
 
 ## 🖥️ Server Configuration
@@ -87,6 +88,11 @@ ollama pull llama3.2:3b
 ollama pull gemma2:27b
 ollama pull qwen2.5vl:latest
 ollama pull deepseek-r1:latest
+
+# Download Wan2.2 models
+mkdir -p /home/devops/models
+cd /home/devops/models
+huggingface-cli download Wan-AI/Wan2.2-TI2V-5B --local-dir ./Wan2.2-TI2V-5B
 ```
 
 ### 5. Python Environment Setup
@@ -104,6 +110,12 @@ pip install nvidia-ml-py3 psutil requests
 
 # Install Open WebUI
 pip install open-webui
+
+# Install DiffSynth-Studio for Wan2.2 Video Generation
+cd /home/devops
+git clone https://github.com/modelscope/DiffSynth-Studio.git
+cd DiffSynth-Studio
+pip install -e .
 ```
 
 ### 6. Configure Services
@@ -163,6 +175,23 @@ ollama list
 - qwen2.5vl:latest (Vision + Language)
 - deepseek-r1:latest (Code generation)
 - llama3.1:8b (General purpose)
+```
+
+### Wan2.2 Video Generation Features
+- **Text-to-Video**: Generate videos from text prompts
+- **Image-to-Video**: Animate static images into videos
+- **High Quality**: 720P @ 24fps output
+- **Efficient Model**: TI2V-5B optimized for RTX 4090
+- **Advanced VAE**: 16×16×4 compression ratio
+- **Memory Optimized**: ~12-16GB VRAM usage
+- **Generation Time**: 2-5 minutes per video
+
+```bash
+# Video generation examples:
+# Text-to-Video: "A dragon flying over a castle"
+# Image-to-Video: Upload image + "Make it come alive"
+# Resolution: Up to 1280x720 @ 24fps
+# Frames: 8-48 frames per video
 ```
 
 ### Development Workflow

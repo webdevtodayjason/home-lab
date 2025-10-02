@@ -86,6 +86,12 @@ start_service "Open WebUI" \
     3000 \
     "http://localhost:3000"
 
+# 5. Wan2.2 Video Generation (Port 7870)
+start_service "Wan2.2 Video Gen" \
+    "python /home/devops/admin-panel-project/wan_video_app.py" \
+    7870 \
+    "http://10.11.1.105:7870"
+
 echo "========================================"
 echo "🎉 All interfaces started!"
 echo ""
@@ -94,6 +100,7 @@ echo "  • JupyterLab:         http://localhost:8888"
 echo "  • Gradio Chat:        http://localhost:7860"  
 echo "  • Streamlit Dashboard: http://localhost:8501"
 echo "  • Open WebUI:         http://localhost:3000"
+echo "  • Wan2.2 Video Gen:   http://10.11.1.105:7870"
 echo "  • Ollama API:         http://localhost:11434"
 echo ""
 echo "💡 Tips:"
@@ -102,6 +109,7 @@ echo "  • Use 'pkill -f jupyter' to stop JupyterLab"
 echo "  • Use 'pkill -f gradio' to stop Gradio"
 echo "  • Use 'pkill -f streamlit' to stop Streamlit"
 echo "  • Use 'pkill -f open-webui' to stop Open WebUI"
+echo "  • Use 'pkill -f wan_video_app' to stop Wan2.2 Video Gen"
 echo "  • Use 'pkill -f ollama' to stop Ollama"
 echo ""
 echo "🔍 Monitor processes with:"

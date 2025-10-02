@@ -60,6 +60,14 @@ SERVICES_CONFIG = [
         'icon': '🚀',
         'port': 11434,
         'color': 'from-yellow-500 to-orange-500'
+    },
+    {
+        'id': 'wanvideo',
+        'name': 'Wan2.2 Video Gen',
+        'description': 'AI video generation with Wan2.2 TI2V-5B model',
+        'icon': '🎬',
+        'port': 7870,
+        'color': 'from-purple-500 to-indigo-500'
     }
 ]
 

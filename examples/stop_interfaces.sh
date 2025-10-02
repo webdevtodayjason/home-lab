@@ -42,6 +42,7 @@ stop_service "JupyterLab" "jupyter-lab"
 stop_service "Gradio Chat" "gradio_chat_app.py"
 stop_service "Streamlit Dashboard" "streamlit.*streamlit_dashboard.py"
 stop_service "Open WebUI" "open-webui"
+stop_service "Wan2.2 Video Gen" "wan_video_app.py"
 stop_service "Ollama" "ollama serve"
 
 echo "========================================"
