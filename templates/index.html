@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Admin Panel - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark': {
+                            900: '#0f0f0f',
+                            800: '#1a1a1a',
+                            700: '#262626',
+                            600: '#404040',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .service-card {
+            transition: all 0.3s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-4px);
+        }
+        .status-online {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .status-offline {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen text-white">
+    <!-- Header -->
+    <header class="bg-dark-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <span class="text-lg">🚀</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold gradient-text">LLM Admin Panel</h1>
+                        <p class="text-sm text-gray-400">RTX 4090 Workstation</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:flex items-center space-x-2 text-sm">
+                        <span class="text-gray-400">System:</span>
+                        <span class="text-green-400" id="uptime">{{ system_info.uptime }}</span>
+                    </div>
+                    <button onclick="refreshAll()" class="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg transition duration-200 text-sm">
+                        🔄 Refresh
+                    </button>
+                    <a href="/logout" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition duration-200 text-sm">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <!-- System Overview -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-white">System Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- GPU Info -->
+                {% if system_info.gpu %}
+                <div class="bg-dark-800 rounded-xl p-4 border border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">GPU</span>
+                        <span class="text-2xl">🎮</span>
+                    </div>
+                    <p class="text-lg font-semibold text-white">{{ system_info.gpu.name }}</p>
+                    <div class="mt-2 space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Temperature:</span>
+                            <span class="text-{% if system_info.gpu.temperature < 70 %}green{% elif system_info.gpu.temperature < 80 %}yellow{% else %}red{% endif %}-400">
+                                {{ system_info.gpu.temperature }}°C
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Utilization:</span>
+                            <span class="text-blue-400">{{ system_info.gpu.utilization }}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Memory:</span>
+                            <span class="text-purple-400">{{ system_info.gpu.memory_used }}/{{ system_info.gpu.memory_total }}MB</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Service Status -->
+                <div class="bg-dark-800 rounded-xl p-4 border border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">Services</span>
+                        <span class="text-2xl">⚡</span>
+                    </div>
+                    <p class="text-lg font-semibold text-white">
+                        <span id="services-online">0</span>/<span>{{ services|length }}</span> Online
+                    </p>
+                    <div class="mt-2">
+                        <div class="w-full bg-dark-700 rounded-full h-2">
+                            <div id="services-progress" class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="bg-dark-800 rounded-xl p-4 border border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">Controls</span>
+                        <span class="text-2xl">🎛️</span>
+                    </div>
+                    <div class="space-y-2">
+                        <button onclick="startAllServices()" class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm transition duration-200">
+                            ▶️ Start All
+                        </button>
+                        <button onclick="stopAllServices()" class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition duration-200">
+                            ⏹️ Stop All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Last Updated -->
+                <div class="bg-dark-800 rounded-xl p-4 border border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">Last Updated</span>
+                        <span class="text-2xl">🕒</span>
+                    </div>
+                    <p class="text-lg font-semibold text-white" id="last-updated">{{ system_info.timestamp }}</p>
+                    <p class="text-sm text-gray-400 mt-1">Auto-refresh in <span id="countdown">30</span>s</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Cards -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white">Services</h2>
+                <div class="text-sm text-gray-400">Click cards to open services</div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for service in services %}
+                <div class="service-card bg-dark-800 rounded-xl border border-gray-700 overflow-hidden cursor-pointer" 
+                     onclick="openService('{{ service.url }}')" 
+                     data-service-id="{{ service.id }}">
+                    
+                    <!-- Card Header with Gradient -->
+                    <div class="bg-gradient-to-r {{ service.color }} h-2"></div>
+                    
+                    <div class="p-6">
+                        <!-- Service Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl">{{ service.icon }}</span>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white">{{ service.name }}</h3>
+                                    <p class="text-sm text-gray-400">Port {{ service.port }}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Status Badge -->
+                            <div class="flex items-center space-x-2">
+                                <div class="status-indicator w-3 h-3 rounded-full animate-pulse {% if service.status == 'online' %}bg-green-500{% else %}bg-red-500{% endif %}" 
+                                     data-status="{{ service.status }}"></div>
+                                <span class="text-sm font-medium status-text {% if service.status == 'online' %}text-green-400{% else %}text-red-400{% endif %}" 
+                                      data-status="{{ service.status }}">{{ service.status|title }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Service Description -->
+                        <p class="text-gray-300 text-sm mb-4 leading-relaxed">{{ service.description }}</p>
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-2">
+                            <button onclick="event.stopPropagation(); openService('{{ service.url }}')" 
+                                    class="flex-1 px-4 py-2 bg-gradient-to-r {{ service.color }} hover:opacity-90 rounded-lg text-white text-sm font-medium transition duration-200">
+                                Open
+                            </button>
+                            <button onclick="event.stopPropagation(); checkServiceStatus('{{ service.id }}')" 
+                                    class="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg text-gray-300 text-sm transition duration-200">
+                                Test
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-dark-800 rounded-xl border border-gray-700 p-6">
+            <h3 class="text-xl font-bold text-white mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="refreshAll()" class="p-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition duration-200">
+                    <div class="text-2xl mb-2">🔄</div>
+                    <div class="text-sm font-medium">Refresh Status</div>
+                </button>
+                <button onclick="openService('http://{{ current_host }}:8888')" class="p-4 bg-orange-600 hover:bg-orange-700 rounded-lg text-center transition duration-200">
+                    <div class="text-2xl mb-2">📊</div>
+                    <div class="text-sm font-medium">Open Jupyter</div>
+                </button>
+                <button onclick="openService('http://{{ current_host }}:7860')" class="p-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-center transition duration-200">
+                    <div class="text-2xl mb-2">💬</div>
+                    <div class="text-sm font-medium">Open Chat</div>
+                </button>
+                <button onclick="openService('http://{{ current_host }}:8501')" class="p-4 bg-green-600 hover:bg-green-700 rounded-lg text-center transition duration-200">
+                    <div class="text-2xl mb-2">📈</div>
+                    <div class="text-sm font-medium">Open Dashboard</div>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-dark-800 rounded-xl p-6 text-center">
+            <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-white">Processing...</p>
+        </div>
+    </div>
+
+    <script>
+        let refreshInterval;
+        let countdownTimer;
+        let countdownSeconds = 30;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateServiceStatuses();
+            startAutoRefresh();
+            updateStatusStyles();
+        });
+
+        function openService(url) {
+            window.open(url, '_blank');
+        }
+
+        async function refreshAll() {
+            await updateServiceStatuses();
+            await updateSystemInfo();
+            updateStatusStyles();
+            showNotification('Dashboard refreshed!', 'success');
+        }
+
+        async function updateServiceStatuses() {
+            try {
+                const response = await fetch('/api/services/status');
+                const statuses = await response.json();
+                
+                let onlineCount = 0;
+                
+                // Update each service card
+                document.querySelectorAll('[data-service-id]').forEach(card => {
+                    const serviceId = card.dataset.serviceId;
+                    const status = statuses[serviceId] || 'offline';
+                    
+                    if (status === 'online') onlineCount++;
+                    
+                    // Update status indicator and text
+                    const indicator = card.querySelector('.status-indicator');
+                    const text = card.querySelector('.status-text');
+                    
+                    indicator.dataset.status = status;
+                    text.dataset.status = status;
+                    text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                });
+
+                // Update overview
+                document.getElementById('services-online').textContent = onlineCount;
+                const totalServices = {{ services|length }};
+                const percentage = (onlineCount / totalServices) * 100;
+                document.getElementById('services-progress').style.width = percentage + '%';
+                
+            } catch (error) {
+                console.error('Failed to update service statuses:', error);
+            }
+        }
+
+        async function updateSystemInfo() {
+            try {
+                const response = await fetch('/api/system/info');
+                const info = await response.json();
+                
+                document.getElementById('uptime').textContent = info.uptime;
+                document.getElementById('last-updated').textContent = info.timestamp;
+                
+            } catch (error) {
+                console.error('Failed to update system info:', error);
+            }
+        }
+
+        function updateStatusStyles() {
+            document.querySelectorAll('.status-indicator').forEach(indicator => {
+                const status = indicator.dataset.status;
+                indicator.className = 'status-indicator w-3 h-3 rounded-full animate-pulse ' + 
+                    (status === 'online' ? 'bg-green-500' : 'bg-red-500');
+            });
+
+            document.querySelectorAll('.status-text').forEach(text => {
+                const status = text.dataset.status;
+                text.className = 'text-sm font-medium status-text ' + 
+                    (status === 'online' ? 'text-green-400' : 'text-red-400');
+            });
+        }
+
+        async function checkServiceStatus(serviceId) {
+            showLoading();
+            await updateServiceStatuses();
+            hideLoading();
+        }
+
+        async function startAllServices() {
+            showLoading();
+            try {
+                const response = await fetch('/api/services/start');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Services started successfully!', 'success');
+                    setTimeout(() => updateServiceStatuses(), 3000);
+                } else {
+                    showNotification(result.message || 'Failed to start services', 'error');
+                }
+            } catch (error) {
+                showNotification('Error starting services', 'error');
+            }
+            hideLoading();
+        }
+
+        async function stopAllServices() {
+            if (confirm('Are you sure you want to stop all services?')) {
+                showLoading();
+                try {
+                    const response = await fetch('/api/services/stop');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification('Services stopped successfully!', 'success');
+                        setTimeout(() => updateServiceStatuses(), 2000);
+                    } else {
+                        showNotification(result.message || 'Failed to stop services', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error stopping services', 'error');
+                }
+                hideLoading();
+            }
+        }
+
+        function startAutoRefresh() {
+            // Update every 30 seconds
+            refreshInterval = setInterval(() => {
+                updateServiceStatuses();
+            }, 30000);
+
+            // Countdown timer
+            function updateCountdown() {
+                document.getElementById('countdown').textContent = countdownSeconds;
+                countdownSeconds--;
+                
+                if (countdownSeconds < 0) {
+                    countdownSeconds = 30;
+                }
+            }
+
+            countdownTimer = setInterval(updateCountdown, 1000);
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            document.getElementById('loading-overlay').classList.add('flex');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('loading-overlay').classList.remove('flex');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 transition-all duration-300 ${
+                type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Cleanup intervals on page unload
+        window.addEventListener('beforeunload', function() {
+            clearInterval(refreshInterval);
+            clearInterval(countdownTimer);
+        });
+    </script>
+</body>
+</html>
