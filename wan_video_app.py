@@ -13,7 +13,15 @@ import uuid
 from pathlib import Path
 from PIL import Image
 import numpy as np
-from diffsynth.pipelines.wan_video import WanVideoPipeline, ModelConfig
+# Conditional import to handle version compatibility
+try:
+    from diffsynth.pipelines.wan_video import WanVideoPipeline, ModelConfig
+    DIFFSYNTH_AVAILABLE = True
+except ImportError as e:
+    print(f"DiffSynth import error: {e}")
+    WanVideoPipeline = None
+    ModelConfig = None
+    DIFFSYNTH_AVAILABLE = False
 
 # Configuration
 MODEL_PATH = "/home/devops/models/Wan2.2-TI2V-5B"
@@ -26,6 +34,10 @@ pipeline = None
 def load_model():
     """Load the Wan2.2 TI2V-5B model pipeline"""
     global pipeline
+    
+    if not DIFFSYNTH_AVAILABLE:
+        return "❌ DiffSynth-Studio not available. Please check installation."
+    
     try:
         print("Loading Wan2.2 TI2V-5B model...")
         
@@ -110,8 +122,13 @@ def generate_video(
         progress(0.8, desc="Saving video...")
         
         # Save video using DiffSynth utilities
-        from diffsynth import save_video
-        save_video(video_frames, output_path, fps=fps)
+        try:
+            from diffsynth import save_video
+            save_video(video_frames, output_path, fps=fps)
+        except ImportError:
+            # Fallback video saving method
+            import imageio
+            imageio.mimsave(output_path, video_frames, fps=fps)
         
         progress(1.0, desc="Video generation complete!")
         
@@ -365,7 +382,5 @@ if __name__ == "__main__":
         server_port=7870,
         share=False,
         show_error=True,
-        show_tips=True,
-        enable_monitoring=True,
         quiet=False
     )
